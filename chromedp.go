@@ -26,6 +26,7 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/cdproto/target"
+	"github.com/rs/zerolog"
 )
 
 // Context is attached to any context.Context which is valid for use with Run.
@@ -174,6 +175,7 @@ type contextKey struct{}
 
 // FromContext extracts the Context data stored inside a context.Context.
 func FromContext(ctx context.Context) *Context {
+	zerolog.Ctx(ctx).Info().Msg("FromContext...")
 	c, _ := ctx.Value(contextKey{}).(*Context)
 	return c
 }
@@ -236,6 +238,7 @@ func Cancel(ctx context.Context) error {
 }
 
 func initContextBrowser(ctx context.Context) (*Context, error) {
+	zerolog.Ctx(ctx).Info().Msg("initContextBrowser...")
 	c := FromContext(ctx)
 	// If c is nil, it's not a chromedp context.
 	// If c.Allocator is nil, NewContext wasn't used properly.
@@ -245,11 +248,14 @@ func initContextBrowser(ctx context.Context) (*Context, error) {
 		return nil, ErrInvalidContext
 	}
 	if c.Browser == nil {
+		zerolog.Ctx(ctx).Info().Msg("c.Allocator.Allocate...")
 		b, err := c.Allocator.Allocate(ctx, c.browserOpts...)
 		if err != nil {
 			return nil, err
 		}
+		zerolog.Ctx(ctx).Info().Msg("c.Browser = b...")
 		c.Browser = b
+		zerolog.Ctx(ctx).Info().Msg("c.Browser.listeners...")
 		c.Browser.listeners = append(c.Browser.listeners, c.browserListeners...)
 	}
 	return c, nil
@@ -262,6 +268,7 @@ func initContextBrowser(ctx context.Context) (*Context, error) {
 // allocated via Allocator. Thus, it's generally a bad idea to use a context
 // timeout on the first Run call, as it will stop the entire browser.
 func Run(ctx context.Context, actions ...Action) error {
+	zerolog.Ctx(ctx).Info().Msg("chromedp.Run...")
 	c, err := initContextBrowser(ctx)
 	if err != nil {
 		return err
@@ -613,6 +620,7 @@ type Tasks []Action
 // frame handler.
 func (t Tasks) Do(ctx context.Context) error {
 	for _, a := range t {
+		zerolog.Ctx(ctx).Info().Interface("action", a).Msg("tasks...")
 		if err := a.Do(ctx); err != nil {
 			return err
 		}
